@@ -18,7 +18,7 @@ def test_listar_imoveis_vazio(mock_conectar_banco,client):
 
     mock_conectar_banco.return_value = mock_conn
 
-    response = client.get("/imoveis")
+    response = client.get("/main")
 
     assert response.status_code == 200
     assert response.get_json() == []
@@ -32,7 +32,7 @@ def test_listar_imoveis_vazio(mock_conectar_banco,client):
 
 
 @patch("main.conectar_banco")
-def test_listar_imoveis(mock_conectar_banco,client):
+def test_listar_imoveis(mock_conectar_banco,clientm):
     mock_conn = MagicMock()
     mock_cursor = MagicMock()
 
@@ -45,7 +45,7 @@ def test_listar_imoveis(mock_conectar_banco,client):
 
     mock_conectar_banco.return_value = mock_conn
 
-    response = client.get("/imoveis")
+    response = client.get("/main")
 
     assert response.status_code == 200
     assert response.get_json() == [
@@ -64,48 +64,79 @@ def test_listar_imoveis(mock_conectar_banco,client):
 
 @patch("main.conectar_banco")
 def test_listar_imovel_id_ok(mock_conectar_banco,client):
-    ###
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+
+    mock_cursor.fetonce.return_value = [
+    (1,"Nicole Common", "Travessa", "Lake Danielle", "Judymouth", "85184", "casa em condominio", 488423.52, "2017-07-29"),
+    ]
+    mock_conn.cursor.return_value= mock_cursor
+
+
+    response =client.get("/main/1")
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        "id":1,
+        "logradouro":"Nicole Common",
+        "tipo_logradouro":"Travessa",
+        "bairro":"Lake Danielle",
+        "cidade":"Judymouth",
+        "cep":"85184",
+        "tipo":"casa em condominio",
+        "valor":488423.52,
+        "data_aquisicao":"2017-07-29"
+    }
+
+    mock_cursor.execute.assert_called_once_with(
+        "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM tabela_imoveis WHERE id = ?",
+        (id,)
+    )
+    mock_cursor.fetchone.assert_called_once()
+    mock_cursor.close.assert_called_once()
+    mock_conn.close.assert_called_once()
+
 
 @patch("main.conectar_banco")
 def test_listar_imoveis_id_erro(mock_conectar_banco,client):
-    ###
+    pass
 
 @patch("main.conectar_banco")
 def test_adicionar_imovel_ok(mock_conectar_banco,client):
-    ###
+    pass
 
 @patch("main.conectar_banco")
 def test_adicionar_imovel_erro(mock_conectar_banco,client):
-    ###
+    pass
 
 @patch("main.conectar_banco")
 def test_atualizar_imovel_ok(mock_conectar_banco,client):
-    ###
+    pass
 
 @patch("main.conectar_banco")
 def test_atualizar_imovel_erro(mock_conectar_banco,client):
-    ###
+    pass
 
 @patch("main.conectar_banco")
 def test_remover_imovel_ok(mock_conectar_banco,client):
-    ###
+    pass
 
 @patch("main.conectar_banco")
 def test_remover_imovel_erro(mock_conectar_banco,client):
-    ###
+    pass
     
 @patch("main.conectar_banco")
 def test_listar_imovel_tipo_ok(mock_conectar_banco,client):
-    ###
+    pass
 
 @patch("main.conectar_banco")
 def test_listar_imovel_tipo_erro(mock_conectar_banco,client):
-    ###
+    pass
 
 @patch("main.conectar_banco")
 def test_listar_imovel_cidade_ok(mock_conectar_banco,client):
-    ###
+    pass
 
 @patch("main.conectar_banco")
 def test_listar_imovel_cidade_erro(mock_conectar_banco,client):
-    ###
+    pass
