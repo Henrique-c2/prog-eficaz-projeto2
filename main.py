@@ -1,8 +1,11 @@
 import os
 import mysql.connector
 from dotenv import load_dotenv
+from flask import Flask
 
 load_dotenv()
+
+app = Flask(__name__)
 
 def conectar_banco():
     conn = mysql.connector.connect(
