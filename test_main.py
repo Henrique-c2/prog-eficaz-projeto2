@@ -26,9 +26,9 @@ def test_listar_imoveis_vazio(mock_conectar_banco,client):
     mock_cursor.execute.assert_called_once_with(
         "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM tabela_imoveis"
     )
-    mock_cursor.fetchall.assert_only_called_once()
-    mock_cursor.close.assert_only_called_once()
-    mock_conn.close.assert_only_called_once()
+    mock_cursor.fetchall.assert_called_once()
+    mock_cursor.close.assert_called_once()
+    mock_conn.close.assert_called_once()
 
 
 @patch("main.conectar_banco")
@@ -54,16 +54,16 @@ def test_listar_imoveis(mock_conectar_banco,client):
         {"id": 3, "logradouro": "Taylor Ranch", "tipo_logradouro": "Avenida", "bairro": "West Jennashire", "cidade": "Katherinefurt", "cep": "51116", "tipo": "apartamento", "valor": 815969.92, "data_aquisicao": "2020-04-24"}
     ]
 
-    mock_cursor.execute.assert_only_called_once_with(
+    mock_cursor.execute.assert_called_once_with(
         "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM tabela_imoveis"
     )
-    mock_cursor.fetchall.assert_only_called_once()
-    mock_cursor.close.assert_only_called_once()
-    mock_conn.close.assert_only_called_once()
+    mock_cursor.fetchall.assert_called_once()
+    mock_cursor.close.assert_called_once()
+    mock_conn.close.assert_called_once()
 
 
-@patch("main.conectar_banco"}
-def test_listar_imovel_id_}k(mock_conectar_banco,client):
+@patch("main.conectar_banco")
+def test_listar_imovel_id_ok(mock_conectar_banco,client):
     ###
 
 @patch("main.conectar_banco")
