@@ -65,7 +65,7 @@ def test_listar_imovel_id_ok(mock_conectar_banco,client):
     mock_conn = MagicMock()
     mock_cursor = MagicMock()
 
-    mock_cursor.fetonce.return_value = (
+    mock_cursor.fetchone.return_value = (
     1,"Nicole Common", "Travessa", "Lake Danielle", "Judymouth", "85184", "casa em condominio", 488423.52, "2017-07-29"
     )
     mock_conn.cursor.return_value= mock_cursor
@@ -106,7 +106,7 @@ def test_listar_imoveis_id_erro(mock_conectar_banco,client):
     response = client.get("/imoveis/999")
 
     assert response.status_code == 404
-    assert response.get_jason() == {"erro":"Imovel não encontrado"}
+    assert response.get_json() == {"erro":"Imovel não encontrado"}
 
     mock_cursor.execute.assert_called_once_with(
         "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM tabela_imoveis WHERE id = %s",
@@ -176,7 +176,7 @@ def test_atualizar_imovel_ok(mock_conectar_banco,client):
 def test_atualizar_imovel_erro(mock_conectar_banco,client):
     mock_conn = MagicMock()
     mock_cursor = MagicMock()
-    mock_conn.cursor.return_value = mock_conn
+    mock_conn.cursor.return_value = mock_cursor
 
     mock_cursor.rowcount = 0
     mock_conectar_banco.return_value = mock_conn
@@ -202,7 +202,7 @@ def test_remover_imovel_ok(mock_conectar_banco,client):
     mock_conn.cursor.return_value = mock_cursor
 
     mock_cursor.rowcount = 1
-    mock_conn.cursor.return_value = mock_conn
+    mock_conectar_banco.return_value = mock_conn
 
     response = client.delete("/imoveis/1")
 
@@ -231,7 +231,7 @@ def test_remover_imovel_erro(mock_conectar_banco,client):
     response = client.delete("/imoveis/999")
 
     assert response.status_code == 404
-    assert response.json() == {"erro":"Imovel não encontrado"}
+    assert response.get_json() == {"erro":"Imovel não encontrado"}
 
     mock_cursor.execute.assert_called_once_with(
         "DELETE FROM tabela_imoveis WHERE id = %s",
@@ -244,16 +244,112 @@ def test_remover_imovel_erro(mock_conectar_banco,client):
         
 @patch("main.conectar_banco")
 def test_listar_imovel_tipo_ok(mock_conectar_banco,client):
-    pass
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+    mock_conectar_banco.return_value = mock_conn
+
+    mock_cursor.fetchall.return_value = [
+        (3, "Taylor Ranch", "Avenida", "West Jennashire", "Katherinefurt", "51116", "apartamento", 815969.92, "2020-04-24")
+    ]
+
+    response = client.get("/imoveis?tipo=apartamento")
+
+    assert response.status_code == 200
+    assert response.get_json() == [
+        {"id": 3, "logradouro": "Taylor Ranch", "tipo_logradouro": "Avenida", "bairro": "West Jennashire", "cidade": "Katherinefurt", "cep": "51116", "tipo": "apartamento", "valor": 815969.92, "data_aquisicao": "2020-04-24"}
+    ]
+
+    mock_cursor.execute.assert_called_once_with(
+        "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM tabela_imoveis WHERE tipo = %s",
+        ("apartamento",)
+    )
+    mock_cursor.fetchall.assert_called_once()
+    mock_cursor.close.assert_called_once()
+    mock_conn.close.assert_called_once()
 
 @patch("main.conectar_banco")
 def test_listar_imovel_tipo_erro(mock_conectar_banco,client):
-    pass
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+    mock_conectar_banco.return_value = mock_conn
+
+    mock_cursor.fetchall.return_value = []
+
+    response = client.get("/imoveis?tipo=apartamento")
+
+    assert response.status_code == 404
+    assert response.get_json() == {"erro":"Não foi encontrado este tipo de imovel."}
+    
+
+    mock_cursor.execute.assert_called_once_with(
+        "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM tabela_imoveis WHERE tipo = %s",
+        ("apartamento",)
+    )
+    mock_cursor.fetchall.assert_called_once()
+    mock_cursor.close.assert_called_once()
+    mock_conn.close.assert_called_once()
+
+
 
 @patch("main.conectar_banco")
 def test_listar_imovel_cidade_ok(mock_conectar_banco,client):
-    pass
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+    mock_conectar_banco.return_value = mock_conn
+
+    mock_cursor.fetchall.return_value = [
+        (3, "Taylor Ranch", "Avenida", "West Jennashire", "Katherinefurt", "51116", "apartamento", 815969.92, "2020-04-24")
+    ]
+
+    response = client.get("/imoveis?cidade=Katherinefurt")
+
+    assert response.status_code == 200
+    assert response.get_json() == [
+        {"id": 3, "logradouro": "Taylor Ranch", "tipo_logradouro": "Avenida", "bairro": "West Jennashire", "cidade": "Katherinefurt", "cep": "51116", "tipo": "apartamento", "valor": 815969.92, "data_aquisicao": "2020-04-24"}
+    ]
+
+    mock_cursor.execute.assert_called_once_with(
+        "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM tabela_imoveis WHERE cidade = %s",
+        ("Katherinefurt",)
+    )
+    mock_cursor.fetchall.assert_called_once()
+    mock_cursor.close.assert_called_once()
+    mock_conn.close.assert_called_once()
+
 
 @patch("main.conectar_banco")
 def test_listar_imovel_cidade_erro(mock_conectar_banco,client):
-    pass
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_conn.cursor.return_value = mock_cursor
+    mock_conectar_banco.return_value = mock_conn
+
+    mock_cursor.fetchall.return_value = []
+
+    response = client.get("/imoveis?cidade=Katherinefurt")
+
+    assert response.status_code == 404
+    assert response.get_json() == {"erro":"A cidade não foi encontrada na lista de imóveis."}
+
+    mock_cursor.execute.assert_called_once_with(
+        "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM tabela_imoveis WHERE cidade = %s",
+        ("Katherinefurt",)
+    )
+    mock_cursor.fetchall.assert_called_once()
+    mock_cursor.close.assert_called_once()
+    mock_conn.close.assert_called_once()
+
+
+@patch("main.conectar_banco")
+def test_atualizar_imovel_dados_incompletos(mock_conectar_banco,client):
+    imovel_incompleto = {"logradouro":"Nicole Common"}
+
+    response = client.put("/imoveis/1",json=imovel_incompleto)
+
+    assert response.status_code == 400
+    assert response.get_json() == {"erro": "Campos obrigatórios: logradouro, tipo_logradouro, bairro, cidade, cep, tipo, valor, data_aquisicao"}
+
+    mock_conectar_banco.assert_not_called()
