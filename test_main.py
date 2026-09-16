@@ -8,6 +8,44 @@ def client():
     with app.test_client() as client:
         yield client
 
+def links_imovel(id):
+    return {
+        "self": {"href": f"/imoveis/{id}", "method": "GET"},
+        "atualizar": {"href": f"/imoveis/{id}", "method": "PUT"},
+        "remover": {"href": f"/imoveis/{id}", "method": "DELETE"},
+        "colecao": {"href": "/imoveis", "method": "GET"}
+    }
+
+def links_colecao():
+    return {
+        "self": {"href": "/imoveis", "method": "GET"},
+        "criar": {"href": "/imoveis", "method": "POST"},
+        "filtrar_por_tipo": {
+            "href": "/imoveis?tipo={tipo}",
+            "method": "GET",
+            "templated": True
+        },
+        "filtrar_por_cidade": {
+            "href": "/imoveis?cidade={cidade}",
+            "method": "GET",
+            "templated": True
+        }
+    }
+
+def imovel_json(id, logradouro, tipo_logradouro, bairro, cidade, cep, tipo, valor, data_aquisicao):
+    return {
+        "id": id,
+        "logradouro": logradouro,
+        "tipo_logradouro": tipo_logradouro,
+        "bairro": bairro,
+        "cidade": cidade,
+        "cep": cep,
+        "tipo": tipo,
+        "valor": valor,
+        "data_aquisicao": data_aquisicao,
+        "_links": links_imovel(id)
+    }
+
 @patch("main.conectar_banco")
 def test_listar_imoveis_vazio(mock_conectar_banco,client):
     mock_conn = MagicMock()
@@ -21,7 +59,10 @@ def test_listar_imoveis_vazio(mock_conectar_banco,client):
     response = client.get("/imoveis")
 
     assert response.status_code == 200
-    assert response.get_json() == []
+    assert response.get_json() == {
+        "imoveis": [],
+        "_links": links_colecao()
+    }
 
     mock_cursor.execute.assert_called_once_with(
         "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM imoveis"
@@ -47,11 +88,14 @@ def test_listar_imoveis(mock_conectar_banco,client):
     response = client.get("/imoveis")
 
     assert response.status_code == 200
-    assert response.get_json() == [
-        {"id": 1, "logradouro": "Nicole Common", "tipo_logradouro": "Travessa", "bairro": "Lake Danielle", "cidade": "Judymouth", "cep": "85184", "tipo": "casa em condominio", "valor": 488423.52, "data_aquisicao": "2017-07-29"},
-        {"id": 2, "logradouro": "Price Prairie", "tipo_logradouro": "Travessa", "bairro": "Colonton", "cidade": "North Garyville", "cep": "93354", "tipo": "casa em condominio", "valor": 260069.89, "data_aquisicao": "2021-11-30"},
-        {"id": 3, "logradouro": "Taylor Ranch", "tipo_logradouro": "Avenida", "bairro": "West Jennashire", "cidade": "Katherinefurt", "cep": "51116", "tipo": "apartamento", "valor": 815969.92, "data_aquisicao": "2020-04-24"}
-    ]
+    assert response.get_json() == {
+        "imoveis": [
+            imovel_json(1, "Nicole Common", "Travessa", "Lake Danielle", "Judymouth", "85184", "casa em condominio", 488423.52, "2017-07-29"),
+            imovel_json(2, "Price Prairie", "Travessa", "Colonton", "North Garyville", "93354", "casa em condominio", 260069.89, "2021-11-30"),
+            imovel_json(3, "Taylor Ranch", "Avenida", "West Jennashire", "Katherinefurt", "51116", "apartamento", 815969.92, "2020-04-24")
+        ],
+        "_links": links_colecao()
+    }
 
     mock_cursor.execute.assert_called_once_with(
         "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM imoveis"
@@ -74,17 +118,10 @@ def test_listar_imovel_id_ok(mock_conectar_banco,client):
     response =client.get("/imoveis/1")
 
     assert response.status_code == 200
-    assert response.get_json() == {
-        "id":1,
-        "logradouro":"Nicole Common",
-        "tipo_logradouro":"Travessa",
-        "bairro":"Lake Danielle",
-        "cidade":"Judymouth",
-        "cep":"85184",
-        "tipo":"casa em condominio",
-        "valor":488423.52,
-        "data_aquisicao":"2017-07-29"
-    }
+    assert response.get_json() == imovel_json(
+        1, "Nicole Common", "Travessa", "Lake Danielle", "Judymouth",
+        "85184", "casa em condominio", 488423.52, "2017-07-29"
+    )
 
     mock_cursor.execute.assert_called_once_with(
         "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM imoveis WHERE id = %s",
@@ -106,7 +143,10 @@ def test_listar_imoveis_id_erro(mock_conectar_banco,client):
     response = client.get("/imoveis/999")
 
     assert response.status_code == 404
-    assert response.get_json() == {"erro":"Imovel não encontrado"}
+    assert response.get_json() == {
+        "erro":"Imovel não encontrado",
+        "_links": {"imoveis": links_colecao()["self"]}
+    }
 
     mock_cursor.execute.assert_called_once_with(
         "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM imoveis WHERE id = %s",
@@ -130,7 +170,10 @@ def test_adicionar_imovel_ok(mock_conectar_banco,client):
     response = client.post("/imoveis",json=imovel)
 
     assert response.status_code == 201
-    assert response.get_json() == {"id":10}
+    assert response.get_json() == {
+        "id":10,
+        "_links": links_imovel(10)
+    }
 
     mock_cursor.execute.assert_called_once_with(
         "INSERT INTO imoveis (logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
@@ -145,7 +188,10 @@ def test_adicionar_imovel_erro(mock_conectar_banco,client):
     response = client.post("/imoveis",json={"logradouro":"cachorro"})
 
     assert response.status_code == 400
-    assert response.get_json() == {"erro":"Campos obrigatórios: logradouro, tipo_logradouro, bairro, cidade, cep, tipo, valor, data_aquisicao"}
+    assert response.get_json() == {
+        "erro":"Campos obrigatórios: logradouro, tipo_logradouro, bairro, cidade, cep, tipo, valor, data_aquisicao",
+        "_links": {"criar": links_colecao()["criar"]}
+    }
 
     mock_conectar_banco.assert_not_called()
 
@@ -162,7 +208,10 @@ def test_atualizar_imovel_ok(mock_conectar_banco,client):
     response = client.put("/imoveis/1",json=imovel)
 
     assert response.status_code == 200
-    assert response.get_json() == {"mensagem":"Imovel atualizado com sucesso"}
+    assert response.get_json() == {
+        "mensagem":"Imovel atualizado com sucesso",
+        "_links": links_imovel(1)
+    }
 
     mock_cursor.execute.assert_called_once_with(
         "UPDATE imoveis SET logradouro = %s, tipo_logradouro = %s, bairro = %s, cidade = %s, cep = %s, tipo = %s, valor = %s, data_aquisicao = %s WHERE id = %s",
@@ -185,7 +234,10 @@ def test_atualizar_imovel_erro(mock_conectar_banco,client):
     response = client.put("/imoveis/1",json=imovel)
 
     assert response.status_code == 404
-    assert response.get_json() == {"erro":"Imovel não encontrado"}
+    assert response.get_json() == {
+        "erro":"Imovel não encontrado",
+        "_links": {"imoveis": links_colecao()["self"]}
+    }
 
     mock_cursor.execute.assert_called_once_with(
         "UPDATE imoveis SET logradouro = %s, tipo_logradouro = %s, bairro = %s, cidade = %s, cep = %s, tipo = %s, valor = %s, data_aquisicao = %s WHERE id = %s",
@@ -207,7 +259,10 @@ def test_remover_imovel_ok(mock_conectar_banco,client):
     response = client.delete("/imoveis/1")
 
     assert response.status_code == 200
-    assert response.get_json() == {"mensagem":"Imovel deletado com sucesso"}
+    assert response.get_json() == {
+        "mensagem":"Imovel deletado com sucesso",
+        "_links": {"imoveis": links_colecao()["self"]}
+    }
 
     mock_cursor.execute.assert_called_once_with(
         "DELETE FROM imoveis WHERE id = %s",
@@ -231,7 +286,10 @@ def test_remover_imovel_erro(mock_conectar_banco,client):
     response = client.delete("/imoveis/999")
 
     assert response.status_code == 404
-    assert response.get_json() == {"erro":"Imovel não encontrado"}
+    assert response.get_json() == {
+        "erro":"Imovel não encontrado",
+        "_links": {"imoveis": links_colecao()["self"]}
+    }
 
     mock_cursor.execute.assert_called_once_with(
         "DELETE FROM imoveis WHERE id = %s",
@@ -256,9 +314,12 @@ def test_listar_imovel_tipo_ok(mock_conectar_banco,client):
     response = client.get("/imoveis?tipo=apartamento")
 
     assert response.status_code == 200
-    assert response.get_json() == [
-        {"id": 3, "logradouro": "Taylor Ranch", "tipo_logradouro": "Avenida", "bairro": "West Jennashire", "cidade": "Katherinefurt", "cep": "51116", "tipo": "apartamento", "valor": 815969.92, "data_aquisicao": "2020-04-24"}
-    ]
+    assert response.get_json() == {
+        "imoveis": [
+            imovel_json(3, "Taylor Ranch", "Avenida", "West Jennashire", "Katherinefurt", "51116", "apartamento", 815969.92, "2020-04-24")
+        ],
+        "_links": links_colecao()
+    }
 
     mock_cursor.execute.assert_called_once_with(
         "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM imoveis WHERE tipo = %s",
@@ -280,7 +341,10 @@ def test_listar_imovel_tipo_erro(mock_conectar_banco,client):
     response = client.get("/imoveis?tipo=apartamento")
 
     assert response.status_code == 404
-    assert response.get_json() == {"erro":"Não foi encontrado este tipo de imovel."}
+    assert response.get_json() == {
+        "erro":"Não foi encontrado este tipo de imovel.",
+        "_links": {"imoveis": links_colecao()["self"]}
+    }
     
 
     mock_cursor.execute.assert_called_once_with(
@@ -307,9 +371,12 @@ def test_listar_imovel_cidade_ok(mock_conectar_banco,client):
     response = client.get("/imoveis?cidade=Katherinefurt")
 
     assert response.status_code == 200
-    assert response.get_json() == [
-        {"id": 3, "logradouro": "Taylor Ranch", "tipo_logradouro": "Avenida", "bairro": "West Jennashire", "cidade": "Katherinefurt", "cep": "51116", "tipo": "apartamento", "valor": 815969.92, "data_aquisicao": "2020-04-24"}
-    ]
+    assert response.get_json() == {
+        "imoveis": [
+            imovel_json(3, "Taylor Ranch", "Avenida", "West Jennashire", "Katherinefurt", "51116", "apartamento", 815969.92, "2020-04-24")
+        ],
+        "_links": links_colecao()
+    }
 
     mock_cursor.execute.assert_called_once_with(
         "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM imoveis WHERE cidade = %s",
@@ -332,7 +399,10 @@ def test_listar_imovel_cidade_erro(mock_conectar_banco,client):
     response = client.get("/imoveis?cidade=Katherinefurt")
 
     assert response.status_code == 404
-    assert response.get_json() == {"erro":"A cidade não foi encontrada na lista de imóveis."}
+    assert response.get_json() == {
+        "erro":"A cidade não foi encontrada na lista de imóveis.",
+        "_links": {"imoveis": links_colecao()["self"]}
+    }
 
     mock_cursor.execute.assert_called_once_with(
         "SELECT id,logradouro,tipo_logradouro,bairro,cidade,cep,tipo,valor,data_aquisicao FROM imoveis WHERE cidade = %s",
@@ -350,6 +420,12 @@ def test_atualizar_imovel_dados_incompletos(mock_conectar_banco,client):
     response = client.put("/imoveis/1",json=imovel_incompleto)
 
     assert response.status_code == 400
-    assert response.get_json() == {"erro": "Campos obrigatórios: logradouro, tipo_logradouro, bairro, cidade, cep, tipo, valor, data_aquisicao"}
+    assert response.get_json() == {
+        "erro": "Campos obrigatórios: logradouro, tipo_logradouro, bairro, cidade, cep, tipo, valor, data_aquisicao",
+        "_links": {
+            "corrigir": {"href": "/imoveis/1", "method": "PUT"},
+            "imoveis": links_colecao()["self"]
+        }
+    }
 
     mock_conectar_banco.assert_not_called()
