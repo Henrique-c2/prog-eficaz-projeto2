@@ -252,3 +252,6 @@ def remover_imovel(id):
         "mensagem": "Imovel deletado com sucesso",
         "_links": {"imoveis": links_colecao()["self"]}
     }),200
+
+if __name__ == "__main__":
+    app.run(debug=True)
